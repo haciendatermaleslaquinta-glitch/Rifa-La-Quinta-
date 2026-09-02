@@ -63,6 +63,8 @@ En `Configuración`, usa la columna A para el parámetro y la columna B para su 
 
 No reemplaces los marcadores por datos inventados. El número de WhatsApp debe ser internacional, sin `+`, espacios ni guiones. El gateway debe ser exactamente `manual`.
 
+Configura también la propiedad privada `SPREADSHEET_ID` en Apps Script: abre **Configuración del proyecto > Propiedades de secuencia de comandos**, crea una propiedad con nombre `SPREADSHEET_ID` y pega el ID de la hoja vinculada. Esta propiedad se usa únicamente en el backend y nunca se devuelve mediante `doGet`.
+
 En `Bilhetes`, usa exactamente estos encabezados en la fila 1, en este orden:
 
 `Boleta` | `Estado` | `Comprador` | `Celular` | `Comprobante` | `Fecha y hora` | `Vendedor` | `Validado por` | `Fecha de validación` | `Observaciones`

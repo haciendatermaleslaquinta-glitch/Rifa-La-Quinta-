@@ -6,7 +6,8 @@ export default {
       rifa: null,
       reloading: false,
       ticketNumbers: [],
-      payData: null
+      payData: null,
+      loadError: ''
     }
   },
   computed: {
@@ -17,8 +18,17 @@ export default {
   methods: {
     async reloadRifa () {
       this.reloading = true
-      this.rifa = await this.$rifa.retrieve()
-      this.reloading = false
+      this.loadError = ''
+      try {
+        const result = await this.$rifa.retrieve()
+        if (!result || !result.config || !result.ticketsStatus) throw new Error('Respuesta inválida')
+        this.rifa = result
+      } catch (error) {
+        this.rifa = null
+        this.loadError = 'No fue posible cargar las boletas.'
+      } finally {
+        this.reloading = false
+      }
     },
     pay () {
       if (this.ticketNumbers.length !== 1) return
@@ -37,14 +47,18 @@ export default {
     }
   },
   async mounted () {
-    this.rifa = await this.$rifa.retrieve()
+    await this.reloadRifa()
   },
   template: `
     <pay
       v-if="payData"
       :data="payData"
       @finished="payFinished()" />
-    <div v-if="rifa === null">Cargando...</div>
+    <div v-if="rifa === null">
+      <p v-if="loadError">{{ loadError }}</p>
+      <p v-else>Cargando...</p>
+      <button v-if="loadError" @click="reloadRifa()" :disabled="reloading">Reintentar</button>
+    </div>
     <div
       v-else
       class="rifa">

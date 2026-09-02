@@ -7,7 +7,7 @@
     "build": "webpack --mode production",
     "serve": "webpack serve",
     "lint": "eslint src",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/acceptance.mjs"
   },
   "repository": {
     "type": "git",

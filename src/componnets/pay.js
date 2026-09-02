@@ -90,7 +90,7 @@ export default {
         })
         this.submitted = true
       } catch (error) {
-        this.error = error.response?.data?.message || 'No fue posible registrar la boleta. Inténtelo nuevamente.'
+        this.error = error.publicMessage || error.response?.data?.message || 'No fue posible registrar la boleta. Inténtelo nuevamente.'
       } finally {
         this.registering = false
       }

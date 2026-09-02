@@ -1,3 +1,5 @@
+import { formatTicketNumber } from '../utils'
+
 const PENDING = '🟡 PENDIENTE DE VALIDACIÓN'
 const AVAILABLE = '🟢 DISPONIBLE'
 const PAID = '🔴 PAGADA'
@@ -20,6 +22,9 @@ export default {
     'ticketNumber'
   ],
   computed: {
+    formattedTicketNumber () {
+      return formatTicketNumber(this.ticketNumber)
+    },
     checked: {
       get () {
         return this.modelValue
@@ -55,7 +60,7 @@ export default {
         :disabled="disabled"
         v-model="checked"
         :value="value" />
-      <div>Nº{{ ticketNumber }}</div>
+      <div>Nº{{ formattedTicketNumber }}</div>
       <div><strong>{{ statusTitle }}</strong></div>
     </label>
   `
