@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import vmModule from 'node:vm'
 import { JSDOM } from 'jsdom'
 
 const serviceSource = fs.readFileSync(new URL('../src/rifaService.js', import.meta.url), 'utf8')
@@ -31,6 +32,7 @@ assert.match(ticketSource, /formatTicketNumber/)
 assert.match(ticketSource, /formattedTicketNumber/)
 assert.match(utilsSource, /padStart\(3, '0'\)/)
 assert.match(backendSource, /getPublicConfig_\(config\)/)
+assert.doesNotMatch(backendSource, /config\.ticketValue/)
 assert.doesNotMatch(backendSource.match(/function getPublicConfig_[\s\S]*?\n}\n/)?.[0] || '', /receiptsFolderId/)
 assert.match(backendSource, /SPREADSHEET_ID/)
 assert.match(backendSource, /'image\/jpeg': \['jpg', 'jpeg'\]/)
@@ -40,6 +42,61 @@ assert.match(backendSource, /cleanPhone\.length < 7 \|\| cleanPhone\.length > 15
 assert.match(backendSource, /requiredHeaders = \['boleta', 'estado', 'comprador', 'celular', 'comprobante'/)
 assert.match(backendSource, /LockService\.getScriptLock/)
 assert.match(backendSource, /setTrashed\(true\)/)
+
+const runBackendRegistration = (config) => {
+  let savedFiles = 0
+  let writtenRows = 0
+  const row = ['001', '🟢 DISPONIBLE', '', '', '', '', '', '', '', '']
+  const context = {
+    console: { error () {} },
+    LockService: { getScriptLock: () => ({ waitLock () {}, releaseLock () {} }) },
+    Utilities: { formatDate: () => '20260902 143510' },
+    SpreadsheetApp: {},
+    PropertiesService: {},
+    DriveApp: {},
+    ContentService: {}
+  }
+  vmModule.createContext(context)
+  vmModule.runInContext(backendSource, context)
+  context.readConfig_ = () => config
+  context.getSheet_ = () => ({
+    getRange: () => ({ setValues: () => { writtenRows++ } })
+  })
+  context.readTicketTable_ = () => ({
+    headers: ['boleta', 'estado', 'comprador', 'celular', 'comprobante', 'fecha y hora', 'vendedor', 'validado por', 'fecha de validacion', 'observaciones'],
+    rows: [row],
+    numberIndex: 0,
+    statusIndex: 1
+  })
+  context.getTicketFolder_ = () => ({})
+  context.saveReceipt_ = () => {
+    savedFiles++
+    return { getId: () => 'receipt-id', setTrashed () {} }
+  }
+  context.json_ = (data) => data
+  context.errorJson_ = (message, status) => ({ error: true, message, status })
+  const request = {
+    ticketNumber: '001',
+    name: 'Carlos Elizondo',
+    phoneNumber: '3001234567',
+    confirmed: true,
+    receipt: { name: 'archivo.jpg', type: 'image/jpeg', size: 1, content: 'YQ==' }
+  }
+  const response = context.doPost({ postData: { contents: JSON.stringify(request) } })
+  return { response, savedFiles, writtenRows }
+}
+
+const validRegistration = runBackendRegistration({ ticketPrice: 50000, ticketTotal: 300, payment: { gateway: 'manual' }, receiptsFolderId: 'folder' })
+assert.equal(validRegistration.savedFiles, 1, '50000 debe permitir guardar el comprobante')
+assert.equal(validRegistration.writtenRows, 1, '50000 debe escribir la boleta pendiente')
+assert.equal(validRegistration.response.status, '🟡 PENDIENTE DE VALIDACIÓN')
+
+for (const ticketPrice of [50001, undefined]) {
+  const invalidRegistration = runBackendRegistration({ ticketPrice, ticketTotal: 300, payment: { gateway: 'manual' }, receiptsFolderId: 'folder' })
+  assert.equal(invalidRegistration.savedFiles, 0, 'precio inválido no debe crear archivo')
+  assert.equal(invalidRegistration.writtenRows, 0, 'precio inválido no debe cambiar estado')
+  assert.equal(invalidRegistration.response.error, true)
+}
 
 const dom = new JSDOM('<div id="app"></div>', { url: 'http://localhost/' })
 globalThis.window = dom.window
@@ -77,7 +134,7 @@ app.config.globalProperties.$rifa = {
     }
   })
 }
-const vm = app.mount('#app')
+const appVm = app.mount('#app')
 await new Promise((resolve) => setTimeout(resolve, 0))
 
 assert.equal(document.querySelectorAll('.ticket').length, 300, 'debe renderizar 300 boletas')
@@ -89,8 +146,8 @@ assert.match(document.querySelector('.pay-action').textContent, /\$\s*50\.000/)
 
 document.querySelectorAll('.ticket')[1].querySelector('input').click()
 await new Promise((resolve) => setTimeout(resolve, 0))
-assert.equal(vm.ticketNumbers.length, 1)
-assert.equal(vm.ticketNumbers[0], 2, 'solo debe quedar seleccionada la ultima boleta')
+assert.equal(appVm.ticketNumbers.length, 1)
+assert.equal(appVm.ticketNumbers[0], 2, 'solo debe quedar seleccionada la ultima boleta')
 assert.match(document.querySelector('.pay-action').textContent, /Nº002/)
 
 document.querySelector('.pay-action').click()

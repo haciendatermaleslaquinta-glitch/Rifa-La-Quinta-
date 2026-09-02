@@ -47,7 +47,7 @@ function doPost (event) {
     const config = readConfig_()
     if (config.payment.gateway !== 'manual') throw publicError_('El gateway de pago debe estar configurado como manual.')
     const ticketNumber = validateTicketNumber_(request.ticketNumber, config.ticketTotal)
-    const cleanRequest = validateRequest_(request, config.ticketValue)
+    const cleanRequest = validateRequest_(request, config.ticketPrice)
 
     const sheet = getSheet_('Bilhetes')
     const table = readTicketTable_(sheet)
