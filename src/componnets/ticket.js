@@ -1,15 +1,15 @@
-const EM_ABERTO = 'EM ABERTO'
-const DISPONIVEL = 'DISPONIVEL'
-const PAGO = 'PAGO'
+const PENDING = '🟡 PENDIENTE DE VALIDACIÓN'
+const AVAILABLE = '🟢 DISPONIBLE'
+const PAID = '🔴 PAGADA'
 const TICKET_CLASS_MAP = {
-  [EM_ABERTO]: 'not-paid',
-  [PAGO]: 'paid',
-  [DISPONIVEL]: 'available'
+  [PENDING]: 'not-paid',
+  [PAID]: 'paid',
+  [AVAILABLE]: 'available'
 }
 const TICKET_STATUS_TITLE_MAP = {
-  [EM_ABERTO]: 'Aguardando',
-  [PAGO]: 'Pago',
-  [DISPONIVEL]: 'Disponível'
+  [PENDING]: PENDING,
+  [PAID]: PAID,
+  [AVAILABLE]: AVAILABLE
 }
 
 export default {
@@ -31,7 +31,7 @@ export default {
     status () {
       const status = this.ticketsStatus[this.ticketNumber]
       if (!status) {
-        return DISPONIVEL
+        return AVAILABLE
       }
       return status
     },
@@ -45,7 +45,7 @@ export default {
       return this.checked.includes(this.value) ? 'checked' : 'non-checked'
     },
     disabled () {
-      return this.status !== DISPONIVEL
+      return this.status !== AVAILABLE
     }
   },
   template: `

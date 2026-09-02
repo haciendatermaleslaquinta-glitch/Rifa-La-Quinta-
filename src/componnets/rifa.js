@@ -1,3 +1,5 @@
+import { formatCurrency } from '../utils'
+
 export default {
   data () {
     return {
@@ -7,6 +9,11 @@ export default {
       payData: null
     }
   },
+  computed: {
+    formattedTicketPrice () {
+      return this.rifa ? formatCurrency(this.rifa.config.ticketPrice) : ''
+    }
+  },
   methods: {
     async reloadRifa () {
       this.reloading = true
@@ -14,11 +21,15 @@ export default {
       this.reloading = false
     },
     pay () {
+      if (this.ticketNumbers.length !== 1) return
       this.payData = {
         ticketNumbers: this.ticketNumbers,
         config: this.rifa.config
       }
       this.ticketNumbers = []
+    },
+    selectTicket (value) {
+      this.ticketNumbers = value.slice(-1)
     },
     async payFinished () {
       this.payData = null
@@ -33,14 +44,14 @@ export default {
       v-if="payData"
       :data="payData"
       @finished="payFinished()" />
-    <div v-if="rifa === null">Carregando...</div>
+    <div v-if="rifa === null">Cargando...</div>
     <div
       v-else
       class="rifa">
       <h1>{{ rifa.config.title }}</h1>
-      <p><strong>Valor do bilhete:</strong> R\${{ rifa.config.ticketPrice }}</p>
+      <p><strong>Valor del boleto:</strong> {{ formattedTicketPrice }}</p>
       <p>{{ rifa.config.description }}</p>
-      <p><strong>Selecione os bilhetes que você quer reservar abaixo:</strong></p>
+      <p><strong>Selecciona una boleta disponible:</strong></p>
       <div class="tickets">
         <ticket
           v-for="ticketNumber in new Array(rifa.config.ticketTotal).fill().map((_, i) => i+1)"
@@ -48,16 +59,17 @@ export default {
           :tickets-status="rifa.ticketsStatus"
           :ticket-number="ticketNumber"
           :value="ticketNumber"
-          v-model="ticketNumbers" />
+          v-model="ticketNumbers"
+          @update:model-value="selectTicket" />
       </div>
       <p>
         <button
           @click="reloadRifa()"
-          :disabled="reloading">Recarregar</button>
+          :disabled="reloading">Recargar</button>
       </p>
     </div>
     <pay-action
-      v-if="ticketNumbers.length > 0"
+      v-if="ticketNumbers.length === 1"
       :ticketNumbers="ticketNumbers"
       :ticketPrice="rifa.config.ticketPrice"
       @click="pay()" />

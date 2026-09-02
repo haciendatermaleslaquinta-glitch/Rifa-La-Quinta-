@@ -1,130 +1,131 @@
-import pixBuilder from '../pixBuilder'
-import { verboseTicketNumbers } from '../utils'
+import { formatCurrency, formatTicketNumber } from '../utils'
+
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+
+const readFile = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(String(reader.result).split(',')[1])
+  reader.onerror = () => reject(new Error('No se pudo leer el comprobante.'))
+  reader.readAsDataURL(file)
+})
 
 export default {
-  props: [
-    'data'
-  ],
+  props: ['data'],
   data () {
     return {
       name: '',
       phoneNumber: '',
-      email: '',
-      payData: null,
-      pixURL: null,
-      pixQrCode: null,
-      registering: false
-    }
-  },
-  methods: {
-    async register () {
-      const ticketNumbers = this.data.ticketNumbers
-      this.payData = {
-        ticketNumbers,
-        name: this.name,
-        phoneNumber: this.phoneNumber,
-        email: this.requiredParams.includes('email') ? this.email : undefined
-      }
-      if (this.data.config.payment.key === 'bc') {
-        const { pixURL, pixQrCode } = await pixBuilder(
-          this.data.config.pixKey,
-          this.data.config.pixKeyOwnerName,
-          this.data.config.pixKeyOwnerCity,
-          this.data.config.ticketPrice,
-          this.pixMessage
-        )
-        this.pixURL = pixURL
-        this.pixQrCode = pixQrCode
-      }
-      this.registering = true
-      const result = await this.$rifa.register(this.payData)
-      if (this.data.config.payment.key !== 'bc') {
-        this.pixURL = result.invoice.pixURL
-        this.pixQrCode = result.invoice.pixQrCode
-      }
-      this.registering = false
-    },
-    finish () {
-      this.payData = null
-      this.pixURL = null
-      this.pixQrCode = null
-      this.registering = false
-      this.$emit('finished')
+      seller: '',
+      receipt: null,
+      confirmed: false,
+      registering: false,
+      error: '',
+      submitted: false
     }
   },
   computed: {
-    pixMessage () {
-      return `${this.data.config.title} bilhetes: ${this.payData.ticketNumbers}`
+    config () {
+      return this.data.config
     },
-    ticketNumbersVerbose () {
-      return verboseTicketNumbers(this.data.ticketNumbers)
+    ticketNumber () {
+      return formatTicketNumber(this.data.ticketNumbers[0])
     },
-    totalPriceVerbose () {
-      return (this.data.ticketNumbers.length * this.data.config.ticketPrice).toFixed(2).replace('.', ',')
+    ticketPrice () {
+      return Number(this.config.ticketPrice || this.config.ticketValue || 0)
     },
-    requiredParams () {
-      return this.data.config.payment.requiredParams
+    payment () {
+      return this.config.payment || {}
+    },
+    formattedPrice () {
+      return formatCurrency(this.ticketPrice)
+    },
+    whatsappMessage () {
+      return this.config.whatsappMessage || 'Hola, realicé el pago de la boleta número [ticketNumbers] de la Rifa Hacienda Termales La Quinta. Adjunto el comprobante de pago.'
+    }
+  },
+  methods: {
+    onReceiptChange (event) {
+      this.error = ''
+      const file = event.target.files[0]
+      if (!file) {
+        this.receipt = null
+        return
+      }
+      const extension = file.name.split('.').pop().toLowerCase()
+      if (!['jpg', 'jpeg', 'png', 'pdf'].includes(extension) || !ALLOWED_TYPES.includes(file.type)) {
+        this.error = 'El comprobante debe ser JPG, JPEG, PNG o PDF.'
+        event.target.value = ''
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        this.error = 'El comprobante no puede superar 5 MB.'
+        event.target.value = ''
+        return
+      }
+      this.receipt = file
+    },
+    async register () {
+      if (this.registering || !this.receipt || !this.confirmed) return
+      if (this.payment.gateway && this.payment.gateway !== 'manual') {
+        this.error = 'El medio de pago configurado no está disponible.'
+        return
+      }
+      this.error = ''
+      this.registering = true
+      try {
+        const content = await readFile(this.receipt)
+        await this.$rifa.register({
+          ticketNumber: this.ticketNumber,
+          name: this.name,
+          phoneNumber: this.phoneNumber,
+          seller: this.seller,
+          confirmed: this.confirmed,
+          receipt: {
+            name: this.receipt.name,
+            type: this.receipt.type,
+            size: this.receipt.size,
+            content
+          }
+        })
+        this.submitted = true
+      } catch (error) {
+        this.error = error.response?.data?.message || 'No fue posible registrar la boleta. Inténtelo nuevamente.'
+      } finally {
+        this.registering = false
+      }
+    },
+    finish () {
+      this.$emit('finished')
     }
   },
   template: `
     <div class="pay">
-      <div
-        v-if="payData"
-        class="content">
-        <div>
-          <p>Pague com Pix e clique em finalizar.</p>
-        </div>
-        <pix
-          v-if="pixURL && pixQrCode"
-          :pix-url="pixURL"
-          :pix-qr-code="pixQrCode" />
-        <p v-else>Gerando cobrança Pix...</p>
-        <whatsapp-notify
-          v-if="data.config.whatsapp"
-          :phone-number="data.config.whatsapp"
-          :ticket-numbers="payData.ticketNumbers"
-          :message="data.config.whatsappMessage" />
-        <div v-if="registering">Registrando pedido...</div>
-        <div>
-          <button
-            @click="finish()"
-            :disabled="registering">Finalizar</button>
-        </div>
+      <div class="content" v-if="submitted">
+        <h2>¡Recibimos su comprobante!</h2>
+        <p>La boleta {{ ticketNumber }} quedó pendiente de validación. Una vez verificado el pago, recibirá la confirmación por WhatsApp.</p>
+        <whatsapp-notify v-if="config.whatsapp" :phone-number="config.whatsapp" :ticket-numbers="data.ticketNumbers" :message="whatsappMessage" />
+        <button @click="finish()">Finalizar</button>
       </div>
-      <form
-        v-else
-        class="content"
-        @submit.prevent="register()">
-        <p><strong>Pague pelos bilhetes:</strong></p>
-        <p>{{ ticketNumbersVerbose }}</p>
+      <form v-else class="content" @submit.prevent="register()">
+        <h2>Registrar boleta {{ ticketNumber }}</h2>
+        <p><strong>Boleta seleccionada:</strong> {{ ticketNumber }}</p>
+        <p><strong>Valor a pagar:</strong> {{ formattedPrice }}</p>
         <hr />
-        <div>
-          <label>Nome:</label>
-          <input
-            v-model="name"
-            type="text"
-            required />
-        </div>
-        <div>
-          <label>Telefone:</label>
-          <input
-            v-model="phoneNumber"
-            type="text"
-            required />
-        </div>
-        <div v-if="requiredParams.includes('email')">
-          <label>E-mail:</label>
-          <input
-            v-model="email"
-            type="email"
-            required />
-        </div>
-        <div>
-          <p><button type="submit">Pagar R\${{ totalPriceVerbose }} por Pix</button></p>
-        </div>
-        <p><button
-          type="button"
-          @click="finish()">Cancelar</button></p>
+        <p><strong>Titular:</strong> {{ payment.holder || '' }}</p>
+        <p><strong>Entidad o medio de pago:</strong> {{ payment.entity || '' }}</p>
+        <p v-if="payment.accountType"><strong>Tipo de cuenta:</strong> {{ payment.accountType }}</p>
+        <p><strong>Número de cuenta o llave:</strong> {{ payment.accountNumber || '' }}</p>
+        <img v-if="payment.qrUrl" :src="payment.qrUrl" alt="Código QR de pago" />
+        <p>{{ payment.instructions || 'Realice la transferencia por el valor indicado y adjunte el comprobante para registrar su boleta.' }}</p>
+        <div><label>Nombre completo:</label><input v-model.trim="name" required /></div>
+        <div><label>Número de celular:</label><input v-model.trim="phoneNumber" required /></div>
+        <div><label>¿Quién le compartió la rifa?</label><input v-model.trim="seller" /></div>
+        <div><label>Comprobante de pago:</label><input type="file" accept=".jpg,.jpeg,.png,.pdf" required @change="onReceiptChange" /></div>
+        <label><input type="checkbox" v-model="confirmed" required /> Confirmo que realicé el pago de {{ formattedPrice }} y que el comprobante adjunto corresponde a esta compra.</label>
+        <p v-if="error" class="pay-error">{{ error }}</p>
+        <button type="submit" :disabled="registering">{{ registering ? 'Procesando...' : 'Enviar comprobante y registrar mi boleta' }}</button>
+        <button type="button" @click="finish()" :disabled="registering">Cancelar</button>
       </form>
     </div>
   `

@@ -10,8 +10,8 @@ export default {
   },
   template: `
     <button class="pay-action">
-      <div class="sub">{{ ticketNumbers.length }} bilhetes selecionados</div>
-      <div>Pague <strong>R\${{ totalPriceVerbose }}</strong> com Pix</div>
+      <div class="sub">{{ ticketNumbers.length }} boletos seleccionados</div>
+      <div>Paga <strong>R\${{ totalPriceVerbose }}</strong></div>
     </button>
   `
 }
