@@ -103,7 +103,7 @@ export default {
     <div class="pay">
       <div class="content" v-if="submitted">
         <h2>¡Recibimos su comprobante!</h2>
-        <p>La boleta {{ ticketNumber }} quedó pendiente de validación. Una vez verificado el pago, recibirá la confirmación por WhatsApp.</p>
+        <p>La boleta {{ ticketNumber }} quedó pendiente de validación. Una vez verificado el pago quedará confirmado</p>
         <whatsapp-notify v-if="config.whatsapp" :phone-number="config.whatsapp" :ticket-numbers="data.ticketNumbers" :message="whatsappMessage" />
         <button @click="finish()">Finalizar</button>
       </div>

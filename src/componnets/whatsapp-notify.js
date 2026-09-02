@@ -17,11 +17,9 @@ export default {
     }
   },
   template: `
-    <div class="whatsapp-notify">
-      <p>¿Ya realizaste el pago?</p>
-      <p><a
-        :href="uri"
-        target="_blank">Avísame por WhatsApp</a></p>
-    </div>
-  `
+  <div class="whatsapp-notify">
+    <p><strong>¡Gracias por participar!</strong></p>
+    <p>¡Mucha suerte! 🍀</p>
+  </div>
+`
 }

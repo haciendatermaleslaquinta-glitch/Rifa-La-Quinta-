@@ -3,9 +3,23 @@
 }
 
 body {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
   font-family: sans-serif;
-  background-color: #fab1a0;
+  background-color: #2f493d;
   color: #2d3436;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(25, 48, 38, .26), rgba(25, 48, 38, .26)), url('../assets/images/fondouno.jpeg');
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 h1 {

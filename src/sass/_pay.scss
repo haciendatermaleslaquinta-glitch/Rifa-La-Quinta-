@@ -23,10 +23,16 @@
     top: 50%;
     left: 50%;
     z-index: 100;
+    box-sizing: border-box;
+    width: min(600px, calc(100% - 2rem));
+    max-height: calc(100vh - 2rem);
     transform: translate(-50%, -50%);
     background-color: #dfe6e9;
     padding: 2rem;
     border-radius: .5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 
     > div {
       margin: 1rem 0;
@@ -45,6 +51,14 @@
         display: block;
         width: 100%;
       }
+    }
+  }
+
+  @media (max-width: 600px) {
+    > .content {
+      width: calc(100% - 1rem);
+      max-height: calc(100vh - 1rem);
+      padding: 1rem;
     }
   }
 }
