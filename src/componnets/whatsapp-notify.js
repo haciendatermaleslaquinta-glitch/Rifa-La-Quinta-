@@ -1,4 +1,4 @@
-import { formatTicketNumber } from '../utils'
+import { formatTicketNumber } from '../utils.js'
 
 export const DEFAULT_MESSAGE = 'Hola, realicé el pago de la boleta número [ticketNumbers] de la Rifa Hacienda Termales La Quinta. Adjunto el comprobante de pago.'
 

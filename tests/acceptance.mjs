@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { JSDOM } from 'jsdom'
 
 const serviceSource = fs.readFileSync(new URL('../src/rifaService.js', import.meta.url), 'utf8')
 const paymentSource = fs.readFileSync(new URL('../src/componnets/pay.js', import.meta.url), 'utf8')
@@ -40,4 +41,71 @@ assert.match(backendSource, /requiredHeaders = \['boleta', 'estado', 'comprador'
 assert.match(backendSource, /LockService\.getScriptLock/)
 assert.match(backendSource, /setTrashed\(true\)/)
 
-console.log('15 pruebas de aceptacion locales pasaron')
+const dom = new JSDOM('<div id="app"></div>', { url: 'http://localhost/' })
+globalThis.window = dom.window
+globalThis.document = dom.window.document
+Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true })
+globalThis.HTMLElement = dom.window.HTMLElement
+globalThis.SVGElement = dom.window.SVGElement
+globalThis.Element = dom.window.Element
+globalThis.Node = dom.window.Node
+
+const { createApp } = await import('vue/dist/vue.esm-bundler.js')
+const { default: rifa } = await import('../src/componnets/rifa.js')
+const { default: pay } = await import('../src/componnets/pay.js')
+const { default: ticket } = await import('../src/componnets/ticket.js')
+const { default: payAction } = await import('../src/componnets/payAction.js')
+const { default: whatsappNotify } = await import('../src/componnets/whatsapp-notify.js')
+
+const app = createApp(rifa)
+app.component('Pay', pay)
+app.component('Ticket', ticket)
+app.component('PayAction', payAction)
+app.component('WhatsappNotify', whatsappNotify)
+app.config.globalProperties.$rifa = {
+  retrieve: async () => ({
+    config: {
+      title: 'RIFA HACIENDA TERMALES LA QUINTA',
+      description: 'Prueba',
+      ticketPrice: 50000,
+      ticketTotal: 300,
+      payment: { gateway: 'manual' }
+    },
+    ticketsStatus: {
+      3: '🟡 PENDIENTE DE VALIDACIÓN',
+      4: '🔴 PAGADA'
+    }
+  })
+}
+const vm = app.mount('#app')
+await new Promise((resolve) => setTimeout(resolve, 0))
+
+assert.equal(document.querySelectorAll('.ticket').length, 300, 'debe renderizar 300 boletas')
+const availableOne = document.querySelectorAll('.ticket')[0]
+availableOne.querySelector('input').click()
+await new Promise((resolve) => setTimeout(resolve, 0))
+assert.match(document.querySelector('.pay-action').textContent, /Nº001/)
+assert.match(document.querySelector('.pay-action').textContent, /\$\s*50\.000/)
+
+document.querySelectorAll('.ticket')[1].querySelector('input').click()
+await new Promise((resolve) => setTimeout(resolve, 0))
+assert.equal(vm.ticketNumbers.length, 1)
+assert.equal(vm.ticketNumbers[0], 2, 'solo debe quedar seleccionada la ultima boleta')
+assert.match(document.querySelector('.pay-action').textContent, /Nº002/)
+
+document.querySelector('.pay-action').click()
+await new Promise((resolve) => setTimeout(resolve, 0))
+assert.ok(document.querySelector('.pay form'), 'el CTA debe abrir el formulario')
+assert.match(document.querySelector('.pay').textContent, /Registrar boleta 002/)
+assert.equal(document.querySelectorAll('.ticket')[2].querySelector('input').disabled, true)
+assert.equal(document.querySelectorAll('.ticket')[3].querySelector('input').disabled, true)
+
+document.querySelector('.pay button[type="button"]').click()
+await new Promise((resolve) => setTimeout(resolve, 0))
+assert.equal(document.querySelector('.pay'), null, 'Cancelar debe regresar a la grilla')
+document.querySelectorAll('.ticket')[5].focus()
+document.querySelectorAll('.ticket')[5].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+await new Promise((resolve) => setTimeout(resolve, 0))
+assert.match(document.querySelector('.pay-action').textContent, /Nº006/)
+
+console.log('Pruebas locales de contrato y flujo Vue pasaron')

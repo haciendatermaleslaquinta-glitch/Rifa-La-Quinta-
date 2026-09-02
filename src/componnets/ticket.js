@@ -1,4 +1,4 @@
-import { formatTicketNumber } from '../utils'
+import { formatTicketNumber } from '../utils.js'
 
 const PENDING = '🟡 PENDIENTE DE VALIDACIÓN'
 const AVAILABLE = '🟢 DISPONIBLE'
@@ -53,8 +53,19 @@ export default {
       return this.status !== AVAILABLE
     }
   },
+  methods: {
+    toggleSelection () {
+      if (this.disabled) return
+      this.$emit('update:modelValue', this.checked.includes(this.value) ? [] : [this.value])
+    }
+  },
   template: `
-    <label :class="['ticket', statusClass, checkedClass]">
+    <label
+      :class="['ticket', statusClass, checkedClass]"
+      :aria-disabled="disabled"
+      tabindex="0"
+      @keydown.enter.prevent="toggleSelection()"
+      @keydown.space.prevent="toggleSelection()">
       <input
         type="checkbox"
         :disabled="disabled"

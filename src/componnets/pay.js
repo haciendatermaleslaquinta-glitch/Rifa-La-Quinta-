@@ -1,4 +1,4 @@
-import { formatCurrency, formatTicketNumber } from '../utils'
+import { formatCurrency, formatTicketNumber } from '../utils.js'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
 const MAX_FILE_SIZE = 5 * 1024 * 1024

@@ -3,6 +3,7 @@
   z-index: 100;
   bottom: .5rem;
   left: .5rem;
+  display: block;
   width: calc(100% - 1rem);
   padding: 1.5rem 1rem;
   background-color: #0984e3;
@@ -12,6 +13,17 @@
   border: none;
   cursor: pointer;
   border-radius: .5rem;
+  box-shadow: 0 .25rem .75rem rgba(45, 52, 54, .35);
+
+  &:focus-visible {
+    outline: .2rem solid #2d3436;
+    outline-offset: .2rem;
+  }
+
+  @media (max-width: 600px) {
+    bottom: calc(.5rem + env(safe-area-inset-bottom));
+    padding: 1rem .75rem;
+  }
 
   > .sub {
     font-size: .75rem;
