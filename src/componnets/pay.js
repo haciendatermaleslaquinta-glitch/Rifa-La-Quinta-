@@ -122,10 +122,22 @@ export default {
         <div><label>Número de celular:</label><input v-model.trim="phoneNumber" required /></div>
         <div><label>¿Quién le compartió la rifa?</label><input v-model.trim="seller" /></div>
         <div><label>Comprobante de pago:</label><input type="file" accept=".jpg,.jpeg,.png,.pdf" required @change="onReceiptChange" /></div>
-        <label><input type="checkbox" v-model="confirmed" required /> Confirmo que realicé el pago de {{ formattedPrice }} y que el comprobante adjunto corresponde a esta compra.</label>
+        <label class="payment-confirmation">
+          <input type="checkbox" v-model="confirmed" required />
+          <span>Confirmo que realicé el pago de {{ formattedPrice }} y que el comprobante adjunto corresponde a esta compra.</span>
+        </label>
         <p v-if="error" class="pay-error">{{ error }}</p>
-        <button type="submit" :disabled="registering">{{ registering ? 'Procesando...' : 'Enviar comprobante y registrar mi boleta' }}</button>
-        <button type="button" @click="finish()" :disabled="registering">Cancelar</button>
+        <div class="form-actions">
+          <button
+            type="button"
+            class="button-secondary"
+            @click="finish()"
+            :disabled="registering">Cancelar</button>
+          <button
+            type="submit"
+            class="button-primary"
+            :disabled="registering">{{ registering ? 'Procesando...' : 'Enviar comprobante y registrar mi boleta' }}</button>
+        </div>
       </form>
     </div>
   `

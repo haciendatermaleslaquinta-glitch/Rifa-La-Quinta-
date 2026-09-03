@@ -40,6 +40,61 @@
   }
 
   > form.content {
+    > .payment-confirmation {
+      display: flex;
+      align-items: flex-start;
+      gap: .65rem;
+      width: 100%;
+      margin-top: 1rem;
+      line-height: 1.4;
+
+      > input {
+        flex: 0 0 auto;
+        width: auto;
+        margin-top: .2rem;
+      }
+
+      > span {
+        flex: 1;
+      }
+    }
+
+    > .pay-error {
+      margin: 1rem 0 0;
+    }
+
+    > .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: .75rem;
+      width: 100%;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(45, 52, 54, .18);
+
+      > button {
+        min-height: 44px;
+        padding: .75rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: .95rem;
+      }
+
+      > .button-primary {
+        background: #7a1717;
+        color: #fff;
+        border: 1px solid #7a1717;
+        font-weight: 700;
+      }
+
+      > .button-secondary {
+        background: transparent;
+        color: #2d3436;
+        border: 1px solid #6b7477;
+      }
+    }
+
     > div {
       > label {
         display: block;
@@ -59,6 +114,15 @@
       width: calc(100% - 1rem);
       max-height: calc(100vh - 1rem);
       padding: 1rem;
+    }
+
+    > form.content > .form-actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+
+      > button {
+        width: 100%;
+      }
     }
   }
 }
